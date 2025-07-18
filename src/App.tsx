@@ -32,7 +32,9 @@ const App: () => JSX.Element = () => {
                 forceEngine="ngraph"
                 enableNodeDrag={false}
                 linkOpacity={0.3}
-                cooldownTicks={80}
+                warmupTicks={100}
+                cooldownTicks={0}
+                nodeResolution={4}
                 onEngineStop={() => {
                     setTimeout(() => {
                         fgRef.current.zoomToFit(100);
