@@ -14,7 +14,7 @@ export function generateLayout(data: { nodes: any[]; links: any[] }) {
         theta: 0.8
     });
 
-    for (let i = 0; i < 200; i++) layout.step();
+    for (let i = 0; i < 100; i++) layout.step();
 
     const nodePositions: Record<string, { x: number; y: number; z: number }> = {};
     g.forEachNode((node) => {

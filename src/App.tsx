@@ -26,13 +26,13 @@ const App: () => JSX.Element = () => {
         }
     }, []);
 
-    useEffect(() => {
-        if (graphData && fgRef.current) {
-            setTimeout(() => {
-                fgRef.current.zoomToFit(100);
-            }, 100);
-        }
-    }, [graphData]);
+    // useEffect(() => {
+    //     if (graphData && fgRef.current) {
+    //         setTimeout(() => {
+    //             fgRef.current.zoomToFit(100);
+    //         }, 100);
+    //     }
+    // }, [graphData]);
 
     useEffect(() => {
         const stats = new Stats();
