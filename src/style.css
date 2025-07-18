@@ -16,7 +16,6 @@ body {
     overflow-x: clip;
 }
 
-
 .app {
     display: flex;
     flex-direction: column;

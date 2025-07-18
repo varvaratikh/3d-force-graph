@@ -1,14 +1,14 @@
-import {JSX, useEffect, useMemo, useRef, useState} from 'react';
+import { JSX, useEffect, useMemo, useRef, useState } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
 import data from './clusters_graph.json';
-import createGraph from 'ngraph.graph';
-import ngraph from 'ngraph.forcelayout';
+import { generateLayout } from './layout';
 
 const App: () => JSX.Element = () => {
     const fgRef = useRef<any>();
     const [selectedNode, setSelectedNode] = useState<any>(null);
-    const [graphData] = useState({ nodes: data.nodes, links: data.links });
+
+    const graphData = useMemo(() => generateLayout(data), []);
 
     useEffect(() => {
         const controls = fgRef.current?.controls();
@@ -16,7 +16,7 @@ const App: () => JSX.Element = () => {
             controls.minDistance = 1;
             controls.maxDistance = 999999;
         }
-    }, [graphData]);
+    }, []);
 
     const handleBackgroundClick = (event: any) => {
         if (event.target.id === 'popup-overlay') {
@@ -24,62 +24,33 @@ const App: () => JSX.Element = () => {
         }
     };
 
-    const layout = useMemo(() => {
-        const g = createGraph();
-        data.nodes.forEach((node: any) => g.addNode(node.id));
-        data.links.forEach((link: any) => g.addLink(link.source, link.target));
-        return ngraph(g, {
-            springLength: 80,
-            springCoefficient: 0.0002,
-            gravity: -10,
-            dragCoefficient: 0.1,
-            theta: 0.8
-        });
-    }, []);
-
     return (
         <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
             <ForceGraph3D
                 ref={fgRef}
                 graphData={graphData}
                 forceEngine="ngraph"
-                ngraphPhysicsEngine={() => layout}
                 enableNodeDrag={false}
                 linkOpacity={0.3}
-                cooldownTicks={100}
+                cooldownTicks={80}
                 onEngineStop={() => {
                     setTimeout(() => {
                         fgRef.current.zoomToFit(100);
                     }, 100);
                 }}
-
                 nodeAutoColorBy="cluster"
+                nodeRelSize={2.5}
                 onNodeClick={(node) => setSelectedNode(node)}
-                nodeThreeObjectExtend={true}
-                // nodeThreeObject={(node) => {
-                //     const cameraDistance = fgRef.current?.camera().position.length();
-                //     const geometry = cameraDistance > 1000
-                //         ? new THREE.SphereGeometry(0.8, 2, 2)
-                //         : new THREE.SphereGeometry(1.5, 8, 8);
-                //     const material = new THREE.MeshBasicMaterial({ color: 'lightblue' });
-                //     return new THREE.Mesh(geometry, material);
-                // }}
-
-                nodeThreeObject={(node) => {
-                    const geometry = new THREE.SphereGeometry(1, 2, 2);
-                    const material = new THREE.MeshBasicMaterial({ color: 'lightblue' });
-                    return new THREE.Mesh(geometry, material);
-                }}
-
                 linkDirectionalParticles={0}
                 linkDirectionalArrowLength={0}
                 backgroundColor="#000011"
                 rendererConfig={{
                     antialias: false,
-                    powerPreference: 'low-power',
+                    powerPreference: 'high-performance',
                     alpha: false,
                     logarithmicDepthBuffer: true,
-                    pixelRatio: window.devicePixelRatio < 1.5 ? 1 : 1.5
+                    precision: 'mediump',
+                    pixelRatio: 1
                 }}
             />
 
@@ -112,7 +83,7 @@ const App: () => JSX.Element = () => {
                         }}
                     >
                         <h3>Node: {selectedNode.id}</h3>
-                        <h3>Сluster: {selectedNode.cluster}</h3>
+                        <h3>Cluster: {selectedNode.cluster}</h3>
                         <p style={{ whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto' }}>
                             {selectedNode.description}
                         </p>
