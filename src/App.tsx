@@ -8,7 +8,14 @@ const App: () => JSX.Element = () => {
     const fgRef = useRef<any>();
     const [selectedNode, setSelectedNode] = useState<any>(null);
 
-    const graphData = useMemo(() => generateLayout(data), []);
+    const [graphData, setGraphData] = useState<any>(null);
+
+    useEffect(() => {
+        setTimeout(() => {
+            const layoutedData = generateLayout(data);
+            setGraphData(layoutedData);
+        }, 0);
+    }, []);
 
     useEffect(() => {
         const controls = fgRef.current?.controls();
@@ -18,6 +25,15 @@ const App: () => JSX.Element = () => {
         }
     }, []);
 
+    useEffect(() => {
+        if (graphData && fgRef.current) {
+            setTimeout(() => {
+                fgRef.current.zoomToFit(100);
+            }, 100);
+        }
+    }, [graphData]);
+
+
     const handleBackgroundClick = (event: any) => {
         if (event.target.id === 'popup-overlay') {
             setSelectedNode(null);
@@ -26,36 +42,32 @@ const App: () => JSX.Element = () => {
 
     return (
         <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-            <ForceGraph3D
-                ref={fgRef}
-                graphData={graphData}
-                forceEngine="ngraph"
-                enableNodeDrag={false}
-                linkOpacity={0.3}
-                warmupTicks={100}
-                cooldownTicks={0}
-                nodeResolution={4}
-                onEngineStop={() => {
-                    setTimeout(() => {
-                        fgRef.current.zoomToFit(100);
-                    }, 100);
-                }}
-                nodeAutoColorBy="cluster"
-                nodeRelSize={2.5}
-                onNodeClick={(node) => setSelectedNode(node)}
-                linkDirectionalParticles={0}
-                linkDirectionalArrowLength={0}
-                backgroundColor="#000011"
-                rendererConfig={{
-                    antialias: false,
-                    powerPreference: 'high-performance',
-                    alpha: false,
-                    logarithmicDepthBuffer: true,
-                    precision: 'mediump',
-                    pixelRatio: 1
-                }}
-            />
-
+            {graphData && (
+                <ForceGraph3D
+                    ref={fgRef}
+                    graphData={graphData}
+                    forceEngine="ngraph"
+                    enableNodeDrag={false}
+                    linkOpacity={0.3}
+                    warmupTicks={100}
+                    cooldownTicks={0}
+                    nodeResolution={4}
+                    nodeAutoColorBy="cluster"
+                    nodeRelSize={2.5}
+                    onNodeClick={(node) => setSelectedNode(node)}
+                    linkDirectionalParticles={0}
+                    linkDirectionalArrowLength={0}
+                    backgroundColor="#000011"
+                    rendererConfig={{
+                        antialias: false,
+                        powerPreference: 'high-performance',
+                        alpha: false,
+                        logarithmicDepthBuffer: true,
+                        precision: 'mediump',
+                        pixelRatio: 1
+                    }}
+                />
+            )}
             {selectedNode && (
                 <div
                     id="popup-overlay"
