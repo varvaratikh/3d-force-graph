@@ -3,6 +3,7 @@ import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
 import data from './clusters_graph.json';
 import { generateLayout } from './layout';
+import Stats from 'stats.js';
 
 const App: () => JSX.Element = () => {
     const fgRef = useRef<any>();
@@ -33,6 +34,23 @@ const App: () => JSX.Element = () => {
         }
     }, [graphData]);
 
+    useEffect(() => {
+        const stats = new Stats();
+        stats.showPanel(0);
+        document.body.appendChild(stats.dom);
+
+        const animate = () => {
+            stats.begin();
+            stats.end();
+            requestAnimationFrame(animate);
+        };
+
+        requestAnimationFrame(animate);
+
+        return () => {
+            document.body.removeChild(stats.dom);
+        };
+    }, []);
 
     const handleBackgroundClick = (event: any) => {
         if (event.target.id === 'popup-overlay') {
