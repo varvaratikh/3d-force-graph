@@ -67,8 +67,9 @@ const App: () => JSX.Element = () => {
                     forceEngine="ngraph"
                     enableNodeDrag={false}
                     linkOpacity={0.3}
-                    warmupTicks={100}
-                    cooldownTicks={0}
+                    warmupTicks={0}
+                    cooldownTicks={300}
+                    cooldownTime={undefined}
                     nodeResolution={4}
                     nodeAutoColorBy="cluster"
                     nodeRelSize={2.5}
