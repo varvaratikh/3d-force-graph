@@ -120,7 +120,7 @@ const App: () => JSX.Element = () => {
                         <p style={{ whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto' }}>
                             {selectedNode.description}
                         </p>
-                        <button onClick={() => setSelectedNode(null)} style={{ marginTop: '10px' }}>
+                        <button onClick={() => setSelectedNode(null)} style={{ marginTop: '10px', borderRadius: '13px' }}>
                             Close
                         </button>
                     </div>
