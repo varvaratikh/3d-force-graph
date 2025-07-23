@@ -7,7 +7,7 @@ export function generateLayout(data: { nodes: any[]; links: any[] }) {
     data.links.forEach((link) => g.addLink(link.source, link.target));
 
     const layout = ngraph(g, {
-        springLength: 80,
+        springLength: 50,
         springCoefficient: 0.0002,
         gravity: -10,
         dragCoefficient: 0.1,

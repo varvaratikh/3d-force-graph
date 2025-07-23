@@ -1,133 +1,112 @@
-import { JSX, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
-import data from './clusters_graph.json';
-import { generateLayout } from './layout';
-import Stats from 'stats.js';
+import rawData from './clusters_graph.json';
 
-const App: () => JSX.Element = () => {
-    const fgRef = useRef<any>();
-    const [selectedNode, setSelectedNode] = useState<any>(null);
-
-    const [graphData, setGraphData] = useState<any>(null);
-
-    useEffect(() => {
-        setTimeout(() => {
-            const layoutedData = generateLayout(data);
-            setGraphData(layoutedData);
-        }, 0);
-    }, []);
-
-    useEffect(() => {
-        const controls = fgRef.current?.controls();
-        if (controls) {
-            controls.minDistance = 1;
-            controls.maxDistance = 999999;
-        }
-    }, []);
-
-    // useEffect(() => {
-    //     if (graphData && fgRef.current) {
-    //         setTimeout(() => {
-    //             fgRef.current.zoomToFit(100);
-    //         }, 100);
-    //     }
-    // }, [graphData]);
-
-    useEffect(() => {
-        const stats = new Stats();
-        stats.showPanel(0);
-        document.body.appendChild(stats.dom);
-
-        const animate = () => {
-            stats.begin();
-            stats.end();
-            requestAnimationFrame(animate);
-        };
-
-        requestAnimationFrame(animate);
-
-        return () => {
-            document.body.removeChild(stats.dom);
-        };
-    }, []);
-
-    const handleBackgroundClick = (event: any) => {
-        if (event.target.id === 'popup-overlay') {
-            setSelectedNode(null);
-        }
-    };
-
-    return (
-        <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-            {graphData && (
-                <ForceGraph3D
-                    ref={fgRef}
-                    graphData={graphData}
-                    forceEngine="ngraph"
-                    enableNodeDrag={false}
-                    linkOpacity={0.3}
-                    warmupTicks={0}
-                    cooldownTicks={300}
-                    cooldownTime={undefined}
-                    nodeResolution={4}
-                    nodeAutoColorBy="cluster"
-                    nodeRelSize={2.5}
-                    onNodeClick={(node) => setSelectedNode(node)}
-                    linkDirectionalParticles={0}
-                    linkDirectionalArrowLength={0}
-                    backgroundColor="#000011"
-                    rendererConfig={{
-                        antialias: false,
-                        powerPreference: 'high-performance',
-                        alpha: false,
-                        logarithmicDepthBuffer: true,
-                        precision: 'mediump',
-                        pixelRatio: 1
-                    }}
-                />
-            )}
-            {selectedNode && (
-                <div
-                    id="popup-overlay"
-                    onClick={handleBackgroundClick}
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                        zIndex: 10,
-                        display: 'flex',
-                        justifyContent: 'flex-start',
-                        alignItems: 'flex-start',
-                        padding: 20
-                    }}
-                >
-                    <div
-                        onClick={(e) => e.stopPropagation()}
-                        style={{
-                            maxWidth: '400px',
-                            backgroundColor: 'rgba(0, 0, 0, 0.85)',
-                            color: 'white',
-                            padding: '15px',
-                            borderRadius: '10px'
-                        }}
-                    >
-                        <h3>Node: {selectedNode.id}</h3>
-                        <h3>Cluster: {selectedNode.cluster}</h3>
-                        <p style={{ whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto' }}>
-                            {selectedNode.description}
-                        </p>
-                        <button onClick={() => setSelectedNode(null)} style={{ marginTop: '10px', borderRadius: '13px' }}>
-                            Close
-                        </button>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
+type Node = {
+    id: string;
+    cluster?: number;
+    description?: string;
+    isClusterParent?: boolean;
+    expanded?: boolean;
 };
 
-export default App;
+type Link = { source: string; target: string };
+
+export default function App() {
+    const fgRef = useRef<any>();
+    const [graphData, setGraphData] = useState<{ nodes: Node[]; links: Link[] }>({ nodes: [], links: [] });
+    const [expandedClusters, setExpandedClusters] = useState<Set<number>>(new Set());
+
+    const fullData = useRef<{ clusterMap: Map<number, Node[]>, clusterParents: Node[] }>({
+        clusterMap: new Map(),
+        clusterParents: []
+    });
+
+    useEffect(() => {
+        const clusterMap = new Map<number, Node[]>();
+        rawData.nodes.forEach((node: Node) => {
+            if (!clusterMap.has(node.cluster!)) clusterMap.set(node.cluster!, []);
+            clusterMap.get(node.cluster!)!.push(node);
+        });
+
+        const clusterParents: Node[] = Array.from(clusterMap.entries()).map(([clusterId]) => ({
+            id: `cluster-${clusterId}`,
+            isClusterParent: true,
+            cluster: clusterId,
+            expanded: false
+        }));
+
+        fullData.current = { clusterMap, clusterParents };
+        setGraphData({ nodes: clusterParents, links: [] });
+    }, []);
+
+    const toggleCluster = (clusterId: number) => {
+        const { clusterMap, clusterParents } = fullData.current;
+        const isExpanded = expandedClusters.has(clusterId);
+        const newSet = new Set(expandedClusters);
+
+        if (isExpanded) {
+            newSet.delete(clusterId);
+        } else {
+            newSet.add(clusterId);
+        }
+
+        const newNodes: Node[] = [...clusterParents];
+        const newLinks: Link[] = [];
+
+        newSet.forEach(clusterId => {
+            const nodes = clusterMap.get(clusterId)!;
+            newNodes.push(...nodes);
+            nodes.forEach(n => {
+                newLinks.push({ source: `cluster-${clusterId}`, target: n.id });
+            });
+        });
+
+        setExpandedClusters(newSet);
+        setGraphData({ nodes: newNodes, links: newLinks });
+    };
+
+
+    return (
+        <div style={{ width: '100vw', height: '100vh' }}>
+            <ForceGraph3D
+                ref={fgRef}
+                graphData={graphData}
+                nodeAutoColorBy="cluster"
+                nodeLabel={(node: Node) =>
+                    node.isClusterParent
+                        ? `Кластер ${node.cluster}`
+                        : `ID: ${node.id}\n${node.description}`
+                }
+
+                nodeThreeObject={(node: any) => {
+                    const isCluster = node.isClusterParent;
+                    const clusterId = node.cluster ?? 0;
+
+                    const color = `hsl(${(clusterId * 137.508) % 360}, 70%, 50%)`;
+
+                    const sphere = new THREE.Mesh(
+                        new THREE.SphereGeometry(isCluster ? 6 : 3),
+                        new THREE.MeshBasicMaterial({ color })
+                    );
+                    return sphere;
+                }}
+
+                onNodeClick={(node: Node) => {
+                    if (node.isClusterParent && node.cluster !== undefined) {
+                        toggleCluster(node.cluster);
+                    }
+                }}
+                backgroundColor="#000011"
+                d3Force="charge"
+                d3VelocityDecay={0.3}
+                d3AlphaDecay={0.03}
+                cooldownTicks={100}
+                linkOpacity={0.2}
+                linkDistance={10}
+                nodeRelSize={2.5}
+            />
+        </div>
+    );
+}
