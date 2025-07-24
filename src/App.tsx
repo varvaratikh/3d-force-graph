@@ -14,7 +14,7 @@ type Node = {
 type Link = { source: string; target: string };
 
 export default function App() {
-    const fgRef = useRef<any>();
+    const fgRef = useRef<any>(null);
     const [graphData, setGraphData] = useState<{ nodes: Node[]; links: Link[] }>({ nodes: [], links: [] });
     const [expandedClusters, setExpandedClusters] = useState<Set<number>>(new Set());
 
@@ -40,6 +40,21 @@ export default function App() {
         fullData.current = { clusterMap, clusterParents };
         setGraphData({ nodes: clusterParents, links: [] });
     }, []);
+
+    useEffect(() => {
+        if (fgRef.current) {
+            fgRef.current.d3Force('charge')?.strength(-40);
+        }
+    }, [graphData]);
+
+    useEffect(() => {
+        if (fgRef.current) {
+            fgRef.current.d3Force('charge')?.strength(-40);
+            fgRef.current.d3Force('link')?.distance(40);
+        }
+    }, [graphData]);
+
+
 
     const toggleCluster = (clusterId: number) => {
         const { clusterMap, clusterParents } = fullData.current;
@@ -87,7 +102,7 @@ export default function App() {
                     const color = `hsl(${(clusterId * 137.508) % 360}, 70%, 50%)`;
 
                     const sphere = new THREE.Mesh(
-                        new THREE.SphereGeometry(isCluster ? 6 : 3),
+                        new THREE.SphereGeometry(isCluster ? 11 : 5),
                         new THREE.MeshBasicMaterial({ color })
                     );
                     return sphere;
@@ -99,12 +114,10 @@ export default function App() {
                     }
                 }}
                 backgroundColor="#000011"
-                d3Force="charge"
                 d3VelocityDecay={0.3}
                 d3AlphaDecay={0.03}
                 cooldownTicks={100}
                 linkOpacity={0.2}
-                linkDistance={10}
                 nodeRelSize={2.5}
             />
         </div>
